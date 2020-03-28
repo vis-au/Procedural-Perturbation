@@ -261,13 +261,12 @@ window.onload = function() {
     var sliNJ = sliJ.node();
     sliNJ.id = "Joints";
     sliNJ.type = 'range';
-    sliNJ.min = 0; // 2
-    sliNJ.max = 30; // 50
-    sliNJ.value = 10; // 10
-    sliNJ.step = 2; // 1
+    sliNJ.min = 0;
+    sliNJ.max = 30;
+    sliNJ.value = 10;
+    sliNJ.step = 2;
     sliJ.on('change', function () {
-        joints = parseInt(this.value)//2+parseInt(3.5*parseInt(this.value));
-        // jInt = parseInt(this.value)
+        joints = parseInt(this.value)
         lblJ.text('Joints: '+ joints)
     })
     center.append('br');
@@ -316,32 +315,40 @@ window.onload = function() {
                                     acen: 0,
                                 })
         }
-            
+        // TODO download as it does not show right
+        // download(vis.g.select('svg').node(), "svg")
     })
 
     
-    // // create input
-    // center.append('div').text('Save SVG as png with name:');
-    // var inpPNGSVG = center.append('input')
-    //     .text(function(d) { return d; });
-    //     inpPNGSVG.node().id = 'htmlPNG';
-    //     inpPNGSVG.on('change', function(){
-    //     pngInput = this.value;
-    // })
-
-    // // create Btn
-    // var btnSaveTreemap = center.append('button');
-    // var btnNSaveTreemap = btnSaveTreemap.node();
-    // btnNSaveTreemap.id = 'btnSaveTreemap';
-    // btnNSaveTreemap.class = 'button'
-    // btnNSaveTreemap.innerText = "Save SVG";
-    
-    // btnSaveTreemap.on('click', function () {
-    //     var svgString = getSVGString(svg.node());
-    //     svgString2Image( svgString, 2*width, 2*height, 'png', save ); // passes Blob and filesize String to the callback
-    
-    //     function save( dataBlob, filesize ){
-    //         saveAs( dataBlob, `${pngInput}.png` ); // FileSaver.js function
-    //     }
-    // })
 }
+
+// // by defghi1977 at https://stackoverflow.com/questions/23218174/how-do-i-save-export-an-svg-file-after-creating-an-svg-with-d3-js-ie-safari-an
+// function SaveSVG(svg){
+//     //get svg source.
+//     var serializer = new XMLSerializer();
+//     var source = serializer.serializeToString(svg);
+
+//     //add name spaces.
+//     if(!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)){
+//         source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+//     }
+//     if(!source.match(/^<svg[^>]+"http\:\/\/www\.w3\.org\/1999\/xlink"/)){
+//         source = source.replace(/^<svg/, '<svg xmlns:xlink="http://www.w3.org/1999/xlink"');
+//     }
+
+//     //add xml declaration
+//     source = '<?xml version="1.0" standalone="no"?>\r\n' + source;
+
+//     //convert svg source to URI data scheme.
+//     var url = "data:image/svg+xml;charset=utf-8,"+encodeURIComponent(source);
+
+//     return source
+// }
+
+// function download(svg, title = 'sample') {
+//     var save = SaveSVG(svg)
+//     var blob = new Blob([save], {
+//       type: "data:image/svg+xml;charset=utf-8"//"text/plain;charset=utf-8"//
+//     });
+//     saveAs(blob, `${title}svg.svg`);
+//   }

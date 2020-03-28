@@ -90,34 +90,26 @@ class Line {
         var widenedPath = this.widen(path, wType, this.g, seed.width, params.width)
         Array.prototype.push.apply(this.paths, widenedPath);
         if (o > 0){
-            // o--
-            // svg = this.g;
-            // if (seed != null) seed = seed.seed
             if (wType == widthTypes.CONSTANT){path.attr("stroke-width", 2);}
             Array.prototype.push.apply(this.paths, (new Line(this.g, a, b, j, p, o--, seed == null ? null : seed.seed, distType, intOrder, intType, wType, params, acen)).paths);
         }
-        // return {paths: paths, g: g, size: this.size}
     }
     getJointDistribution (j, distType, seed, params){
         var joints = []
         var arng = seed == null ? null : new alea(seed)
         for(var i = 0; i < j; i++){
-            // TODO: seeded:
-            // seedrandom = require("seedrandom"),
             var uniform = d3.randomUniform(0,1),
-                gaussian = function(){return Math.max(Math.min(d3.randomNormal(params.mu, params.sigma)(),1),0)},
-                mmgaussian = function(){return Math.max(Math.min(d3.randomNormal(params.mu, params.sigma)()+(i>j*0.5 ? -0.4 : 0.4),1),0)};
+                gaussian = function(){return Math.max(Math.min(d3.randomNormal(params.mu, params.sigma)(),1),0)};
             if (seed != null){
                 var normal = d3.randomNormal.source(arng)(params.mu, params.sigma);
                 uniform = d3.randomUniform.source(arng)(0,1);
                 gaussian = function(){return Math.max(Math.min(normal(),1),0)};
-                mmgaussian = function(){return Math.max(Math.min(normal()+(i>j*0.5 ? -0.4 : 0.4),1),0)};
             }
             var equdistant = function(num){return (num/(j+1))};
             var invgaussian = function(){
                     var g = gaussian()
                     return (g < 0.5 ? 0.5 : 1.5)-g};
-            joints.push(distType == distributions.UNIFORM ? uniform() : (distType == distributions.GAUSSIAN ? gaussian() : (distType == 'mmgaussian' ? mmgaussian() : (distType == distributions.INVERSEGAUSSIAN ? invgaussian() : equdistant(i)))))
+            joints.push(distType == distributions.UNIFORM ? uniform() : (distType == distributions.GAUSSIAN ? gaussian() : (distType == distributions.INVERSEGAUSSIAN ? invgaussian() : equdistant(i))))
         }
         return joints
     }
@@ -144,9 +136,6 @@ class Line {
     }
 
     getPath (a, b, p, intType, dist, svg, seed, acen){
-        // var pathData = []
-        // var dir = {x: b.x-a.x, y:b.y-a.y}
-        // var odir = {x: b.y-a.y, y:a.x-b.x}
         var min = acen != null ? 0.5-acen : 0; // 0-1 as offset
         var max = p; // amplitude
         var arng = seed == null ? null : new alea(seed);
@@ -231,10 +220,6 @@ class Line {
                     i+= strokePattern[k]-1
                 }
             }
-            // for(var i = 0; i < sections.length; i++){
-            //     var width = (1-Math.abs(i - sections.length/2)/(sections.length/2))*(max-min)+min
-            //     sections[i].attr('stroke-width', width)
-            // }
         }
     }
     
@@ -245,9 +230,9 @@ class Line {
         if (divLength == 0) return null;
         var xperb = (b.x-a.x) / divLength
         var yperb = (b.y-a.y) / divLength
-        for (var j = 0; j < joints; j++){ // j % 2 // NOTE: chanced from -2 to -1 (if something breaks) // NOTE: change from (1)-(-1) to (0)-(0)
+        for (var j = 0; j < joints; j++){ 
             var rndDist = disturbance * rndsDist[j];
-            lineData.push({x: a.x+(b.x - a.x)*rndsPla[j]-yperb*rndDist/*/joints*j*/, y: a.y+(b.y - a.y)*rndsPla[j]+xperb*rndDist/*/joints*j*/});
+            lineData.push({x: a.x+(b.x - a.x)*rndsPla[j]-yperb*rndDist, y: a.y+(b.y - a.y)*rndsPla[j]+xperb*rndDist});
         }
         lineData.push({x: b.x, y: b.y});
     
@@ -258,58 +243,62 @@ class Line {
 }
 
 class LineValue {
-    constructor(svg, a, b, j, p, o, seed, distType, intOrder, intType, wType, params, acen){
+    constructor(svg, a, b, j, p, o, seed, distType, intOrder, intType, wType, params, acen, startWidth = null, endWidth = null){
+        this.startWidth = startWidth
+        this.endWidth = endWidth
         this.size = 0
         this.paths = []
         this.g = svg.append('g')
         var dist = this.getJointDistribution(j, distType, seed.dist, params.dist)
         var orderedDist = this.orderInterpolation(dist, intOrder)
-        var path = this.getPath(a, b, p, intType, orderedDist, this.g, seed.path, acen)
+        if (seed.path == null){
+            console.log("bum")
+        }
+        var path = this.getPath(a, b, p, intType, orderedDist, this.g, seed.path, params.gaps, acen)
         .attr("fill", 'none').attr('stroke', 'black').attr('stroke-width', 3)
         var widenedPath = this.widen(path, wType, this.g, seed.width, params.width)
         Array.prototype.push.apply(this.paths, widenedPath);
         if (o > 0){
-            // o--
-            // svg = this.g;
-            // if (seed != null) seed = seed.seed
             if (wType == widthTypes.CONSTANT){path.attr("stroke-width", 2);}
-            Array.prototype.push.apply(this.paths, (new Line(this.g, a, b, j, p, o--, seed == null ? null : seed.seed, distType, intOrder, intType, wType, params, acen)).paths);
+            Array.prototype.push.apply(this.paths, (new LineValue(this.g, a, b, j, p, o--, seed == null ? null : seed.seed, distType, intOrder, intType, wType, params, acen, startWidth, endWidth)).paths);
         }
-        // return {paths: paths, g: g, size: this.size}
     }
 
     getJointDistribution(j, distType, seed, params){
         var joints = []
         var arng = seed == null ? null : new alea(seed)
+        
+        var bates = function(){return d3.randomBates(distType == -1 ? 1 : Math.abs(distType-0.5)*28+1)()};
+        var calc = 0;
+        if (seed != null){
+            calc =  Math.abs(distType-0.5)*10+1
+            bates = d3.randomBates.source(arng)(distType == -1 ? 1 : calc);
+        }
+        
+        var invbates = function(){
+            var g = bates()
+            return (g < 0.5 ? 0.5 : 1.5)-g};
+
         for(var i = 0; i < j; i++){
-            // TODO: seeded:
-            // seedrandom = require("seedrandom"),
-            var mu = 0.5
-            var sigma = (0.5-Math.abs(distType-0.5))*0.7
-            // if (distType < 0.3)
-            var uniform = d3.randomUniform(0,1),
-                gaussian = function(){return Math.max(Math.min(d3.randomNormal(mu, sigma)(),1),0)},
-                mmgaussian = function(){return Math.max(Math.min(d3.randomNormal(mu, sigma)()+(i>j*0.5 ? -0.4 : 0.4),1),0)};
-            if (seed != null){
-                var normal = d3.randomNormal.source(arng)(mu, sigma);
-                uniform = d3.randomUniform.source(arng)(0,1);
-                gaussian = function(){return Math.max(Math.min(normal(),1),0)};
-                mmgaussian = function(){return Math.max(Math.min(normal()+(i>j*0.5 ? -0.4 : 0.4),1),0)};
-            }
-            var equdistant = function(num){return (num/(j+1))};
-            var invgaussian = function(){
-                    var g = gaussian()
-                    return (g < 0.5 ? 0.5 : 1.5)-g};
+            var bate = bates()
+            var invbate = invbates()
             
-            joints.push(distType < 0.4 ? gaussian() : (distType < 0.466 ? uniform() : (distType < 0.533 ? equdistant(i) : (distType < 0.6 ? uniform() : invgaussian()))))
+            if (distType == -1){
+                joints.push(bate)
+                joints.push(bate)
+                joints.push(bate)
+                i+=2
+            }
+            else
+                joints.push(distType < 0.5 ? bate : invbate)
         }
         return joints
     }
 
     orderInterpolation(dist, intOrder){
         var orderedDist = []
-        if (intOrder < 0.33) orderedDist = dist.sort()
-        else if (intOrder > 0.66){
+        if (intOrder < 0.25) orderedDist = dist.sort()
+        else if (intOrder > 0.75){
             dist.sort()
             for (var i = 0; i < dist.length; i++){
                 var j = dist.length-1-i
@@ -323,14 +312,24 @@ class LineValue {
                 else break;
             }
         }
+        else if (intOrder > 0.5){
+            dist.sort()
+            if (dist.length > 2) orderedDist.push(dist[2])
+            orderedDist.push(dist[0])
+            var i = 2
+            for (i = 4; i < dist.length; i+=2){
+                orderedDist.push(dist[i])
+                orderedDist.push(dist[i-3])
+            }
+            if (dist.length > i-1)orderedDist.push(dist[i-1])
+            if (i > 4) orderedDist.push(dist[i-3])
+
+        }
         else orderedDist = dist
         return orderedDist
     }
 
-    getPath(a, b, p, intType, dist, svg, seed, acen){
-        // var pathData = []
-        // var dir = {x: b.x-a.x, y:b.y-a.y}
-        // var odir = {x: b.y-a.y, y:a.x-b.x}
+    getPath(a, b, p, intType, dist, svg, seed, gaps, acen){
         var min = acen != null ? 0.5-acen : 0; // 0-1 as offset
         var max = p; // amplitude
         var arng = seed == null ? null : new alea(seed);
@@ -342,13 +341,13 @@ class LineValue {
             amps = Array.apply(null, Array(dist.length)).map(function() {
                 return (Math.random()-min)*max;})
         }
-        var path = this.setLine(svg.append('path'), a, b, dist, amps, dist.length, 1, interpolationFunction(intType))
+        var path = this.setLine(svg.append('path'), a, b, dist, amps, dist.length, arng, gaps, interpolationFunction(intType))
         return path
     }
 
     widen(path, wType, svg, seed, params){
         if (wType < 0.2) return [path.attr('stroke-width', params.min)]
-        var precision = 4
+        var precision = params.precision;
         var sections = this.dividePath(path, precision, svg)
         var widenedSections = this.assignWidths(sections, wType, seed, params)
         path.remove();
@@ -413,25 +412,48 @@ class LineValue {
                     i+= strokePattern[k]-1
                 }
             }
-            // for(var i = 0; i < sections.length; i++){
-            //     var width = (1-Math.abs(i - sections.length/2)/(sections.length/2))*(max-min)+min
-            //     sections[i].attr('stroke-width', width)
-            // }
+        }
+        else{
+            var arng = seed == null ? null : new alea(seed)
+            var dist = []
+            var wid = []
+            var bates = d3.randomBates.source(arng)(3);
+            dist.push(0)
+            wid.push(this.startWidth == null ? arng()*(params.max-params.min)+params.min : this.startWidth)
+            for (var i = 1; i < params.j+1; i++){
+                var bdist = bates()
+                dist.push(bdist)
+                wid.push(arng()*(params.max-params.min)+params.min)
+            }
+            dist.push(1)
+            wid.push(this.endWidth == null ? arng()*(params.max-params.min)+params.min : this.endWidth)
+            dist.sort()
+            var counter = 1;
+            for(var i = 0; i < sections.length; i++){
+                var curLength = i/sections.length
+                while (curLength > dist[counter]) counter ++
+                var curStroke = (curLength - dist[counter-1]) / (dist[counter]-dist[counter-1])
+                var newWidth = wid[counter-1]+(wid[counter]-wid[counter-1])*curStroke
+                sections[i].attr('stroke-width', newWidth).attr('fill', 'none').attr('stroke','black').attr('stroke-linecap', params.cap)
+            }
+            this.startWidth = wid[0]
+            this.endWidth = wid[wid.length-1]
         }
     }
     
-    setLine(cloned, a, b, rndsPla, rndsDist, joints, disturbance, interpolationFunction){
+    setLine(cloned, a, b, rndsPla, rndsDist, joints, arng, gap, interpolationFunction){
         var lineData = [];
-        lineData.push({x: a.x, y: a.y});
         var divLength = Math.sqrt((-(b.y-a.y))**2+(b.x-a.x)**2)
+        var displacement = divLength * gap
+        lineData.push({x: a.x + (arng()-0.5)*2*displacement, y: a.y + (arng()-0.5)*2*displacement});
         if (divLength == 0) return null;
         var xperb = (b.x-a.x) / divLength
         var yperb = (b.y-a.y) / divLength
         for (var j = 0; j < joints; j++){ // j % 2 // NOTE: chanced from -2 to -1 (if something breaks) // NOTE: change from (1)-(-1) to (0)-(0)
-            var rndDist = disturbance * rndsDist[j];
+            var rndDist = rndsDist[j];
             lineData.push({x: a.x+(b.x - a.x)*rndsPla[j]-yperb*rndDist/*/joints*j*/, y: a.y+(b.y - a.y)*rndsPla[j]+xperb*rndDist/*/joints*j*/});
         }
-        lineData.push({x: b.x, y: b.y});
+        lineData.push({x: b.x + (arng()-0.5)*2*displacement, y: b.y + (arng()-0.5)*2*displacement});
     
         cloned.datum(lineData);
         cloned.attr("d", interpolationFunction(lineData));
@@ -439,7 +461,7 @@ class LineValue {
     }
 }
 class Rect {
-    constructor(svg, center, rectsize, rectSeed, length, j, p, o, distType, intOrder, intType, wType, params, acen){
+    constructor(svg, center, rectsize, rectSeed, length, continuous, j, p, o, distType, intOrder, intType, wType, params, acen){
         this.paths = []
         this.size = 0
         var seed = null
@@ -453,12 +475,19 @@ class Rect {
         var end = b
         var divLength = Math.sqrt((-(b.y-a.y))**2+(b.x-a.x)**2)
         var isValue = !(parseFloat(distType) !== parseFloat(distType))
+        var startWidth = null
+        var endWidth = null
+        if (rectSeed == null){
+            console.log("bum")
+        }
         if (divLength != 0)
         {
             seed = rectSeed == null ? SeededRandom.createNullSeed(o) : SeededRandom.createSeed(SeededRandom.getSeededSeed(arng, length), o, length)
             var pathsT = null
             if (isValue) pathsT = new LineValue(this.g, start, end, j, p, o, seed, distType, intOrder, intType, wType, params, acen);
             else pathsT = new Line(this.g, start, end, j, p, o, seed, distType, intOrder, intType, wType, params, acen);
+            startWidth = pathsT.endWidth
+            endWidth = pathsT.startWidth
             this.size += pathsT.size;
             Array.prototype.push.apply(this.paths, pathsT.paths);
         }
@@ -467,10 +496,11 @@ class Rect {
         var divLength = Math.sqrt((-(c.y-b.y))**2+(c.x-b.x)**2)
         if (divLength != 0)
         {
-            seed = this.rectSeed == null ? SeededRandom.createNullSeed(o) : SeededRandom.createSeed(SeededRandom.getSeededSeed(arng, length), o, length)
+            seed = rectSeed == null ? SeededRandom.createNullSeed(o) : SeededRandom.createSeed(SeededRandom.getSeededSeed(arng, length), o, length)
             var pathsR = null
-            if (isValue) pathsR = new LineValue(this.g, start, end, j, p, o, seed, distType, intOrder, intType, wType, params, acen);
+            if (isValue) pathsR = new LineValue(this.g, start, end, j, p, o, seed, distType, intOrder, intType, wType, params, acen, continuous ? startWidth : null);
             else pathsR = new Line(this.g, start, end, j, p, o, seed, distType, intOrder, intType, wType, params, acen);
+            startWidth = pathsR.startWidth
             this.size += pathsR.size;
             Array.prototype.push.apply(this.paths, pathsR.paths);
         }
@@ -479,10 +509,11 @@ class Rect {
         var divLength = Math.sqrt((-(d.y-c.y))**2+(d.x-c.x)**2)
         if (divLength != 0)
         {
-            seed = this.rectSeed == null ? SeededRandom.createNullSeed(o) : SeededRandom.createSeed(SeededRandom.getSeededSeed(arng, length), o, length)
+            seed = rectSeed == null ? SeededRandom.createNullSeed(o) : SeededRandom.createSeed(SeededRandom.getSeededSeed(arng, length), o, length)
             var pathsB = null
-            if (isValue) pathsB = new LineValue(this.g, start, end, j, p, o, seed, distType, intOrder, intType, wType, params, acen);
+            if (isValue) pathsB = new LineValue(this.g, start, end, j, p, o, seed, distType, intOrder, intType, wType, params, acen, continuous ? startWidth : null);
             else pathsB = new Line(this.g, start, end, j, p, o, seed, distType, intOrder, intType, wType, params, acen);
+            startWidth = pathsB.startWidth
             this.size += pathsB.size;
             Array.prototype.push.apply(this.paths, pathsB.paths);
         }
@@ -491,31 +522,28 @@ class Rect {
         var divLength = Math.sqrt((-(a.y-d.y))**2+(a.x-d.x)**2)
         if (divLength != 0)
         {
-            seed = this.rectSeed == null ? SeededRandom.createNullSeed(o) : SeededRandom.createSeed(SeededRandom.getSeededSeed(arng, length), o, length)
+            seed = rectSeed == null ? SeededRandom.createNullSeed(o) : SeededRandom.createSeed(SeededRandom.getSeededSeed(arng, length), o, length)
             var pathsL = null
-            if (isValue) pathsL = new LineValue(this.g, start, end, j, p, o, seed, distType, intOrder, intType, wType, params, acen);
+            if (isValue) pathsL = new LineValue(this.g, start, end, j, p, o, seed, distType, intOrder, intType, wType, params, acen, continuous ? startWidth : null, continuous ? endWidth : null);
             else pathsL = new Line(this.g, start, end, j, p, o, seed, distType, intOrder, intType, wType, params, acen);
             this.size += pathsL.size;
             Array.prototype.push.apply(this.paths, pathsL.paths);
         }
-        // this.size = pathsT.size+pathsR.size+pathsB.size+pathsL.size
         var diff = this.size -rectsize.width*rectsize.height
         this.perDiff = diff/(rectsize.width*rectsize.height)
-        // return {paths: this.paths, g: svg, size: this.size, diff: diff/(rectsize.width*rectsize.height)}
     }
 }
 
-// TODO: make both lines
 class Shape{
     static Line(svg, a, b, j, p, o, seed, distType, intOrder, intType, wType, params, acen){
         return new Line(svg, a, b, j, p, o, seed, distType, intOrder, intType, wType, params, acen);
     }
-    static LineValue(svg, a, b, j, p, o, seed, distType, intOrder, intType, wType, params, acen){
-        return new LineValue(svg, a, b, j, p, o, seed, distType, intOrder, intType, wType, params, acen);
+    static LineValue(svg, a, b, j, p, o, seed, distType, intOrder, intType, wType, params, acen, startWidth = null, endWidth = null){
+        return new LineValue(svg, a, b, j, p, o, seed, distType, intOrder, intType, wType, params, acen, startWidth, endWidth);
     }
     
-    static Rect(svg, center, rectsize, rectSeed, length, j, p, o, distType, intOrder, intType, wType, params, acen){
-        return new Rect(svg, center, rectsize, rectSeed, length, j, p, o, distType, intOrder, intType, wType, params, acen);
+    static Rect(svg, center, rectsize, rectSeed, length, continuous, j, p, o, distType, intOrder, intType, wType, params, acen){
+        return new Rect(svg, center, rectsize, rectSeed, length, continuous, j, p, o, distType, intOrder, intType, wType, params, acen);
     }
 }
 
@@ -531,16 +559,21 @@ class Perturbation{
 
 // TODO: g placement node
 class PerturbSVG extends Perturbation{
-    constructor(svg, input){
+    constructor(svg, input, html){
         super(svg);
         this.g.node().append(input);
         var newSVG = this.g.select('svg')
         svg.attr('width', newSVG.attr('width')).attr('height', newSVG.attr('height'))
         this.shapes = this.ParseShapes();
+        // this.g.append('svg').html(html);
+        // var newSVG = this.g.select('svg').html(html)
+        // svg.attr('width', input.width.baseVal.value).attr('height', input.height.baseVal.value)
+        // this.shapes = this.ParseShapes();
     }
 
     ParseShapes(){
         var newPolys = []
+        var newPaths = []
         var newRects = []
         var newLines = []
         var newSVG = this.g.select('svg')
@@ -606,7 +639,24 @@ class PerturbSVG extends Perturbation{
         });
         polys.remove();
 
-        return {polys: newPolys, lines: newLines, rectangles: newRects}
+        var paths = newSVG.selectAll('path')
+        paths.each(function(d, i){
+            var path = d3.select(this);
+            var fill = path.style('fill')
+            var fillo = path.style('fill-opacity')
+            var stro = path.style('stroke')
+            var points = object.getPathPoints(path)
+            var node = document.createElement('g');
+            var parent = path.node().parentNode;
+            parent.insertBefore(node, path.node())
+            // var simplePoints = simplify(points, 5, true)
+            // path.attr('d', lineFunction(simplePoints))
+            var newPath = object.getPath(points, false)
+            newPaths.push({lines: newPath, fill: fill, fillo: fillo, stro: stro, node: node})
+        });
+        paths.remove();
+
+        return {polys: newPolys, lines: newLines, rectangles: newRects, paths: newPaths}
     }
 
     getPolygon(points, end) {
@@ -625,6 +675,24 @@ class PerturbSVG extends Perturbation{
                 
         return lines;
     }
+
+    getPath(points, end) {
+        var lines = []
+    
+        for (var i = 0; i < points.length - (end ? 0 : 1); i++){
+            var x1 = points[i].x; var y1 = points[i].y;
+            var x2 = points[(i+1)%points.length].x; var y2 = points[(i+1)%points.length].y;
+            
+            var divLength = Math.sqrt((-(y2-y1))**2+(x2-x1)**2)
+            if (divLength == 0 && i < 1) {
+                return d3.select()
+            } else if (divLength == 0) break;
+            lines.push({a:{x:x1, y:y1}, b:{x:x2, y:y2}})
+        }
+                
+        return lines;
+    }
+
     getTrailPath(svg, id, paths, smooth){
         var char = smooth ? 'C' : 'L'
         var fulld = paths[0].attr('d');
@@ -637,7 +705,6 @@ class PerturbSVG extends Perturbation{
                 .attr("id", id + "full")
                 .attr('d', fulld);
         return clonedFull
-
     }
 
     getPoints(node){
@@ -648,6 +715,25 @@ class PerturbSVG extends Perturbation{
             xys.push({x: parseFloat(points2[i]), y: parseFloat(points2[i+1])})
         }
         return xys
+    }
+
+    getPathPoints(node){
+        var xys = []
+        // var points = node.attr('d').split(' ')
+        var points2 = node.attr('d').match(/[+-]?\d+(\.\d+)?/g)
+        for (var i = 0; i < points2.length-1; i+=2){
+            xys.push({x: parseFloat(points2[i]), y: parseFloat(points2[i+1])})
+        }
+        return xys
+    }
+
+    setNewPathD(node, points){
+        var string = `M${points[i].x},${points[i].y}`
+        for (var i = 1; i < points.length; i++){
+            var x1 = points[i].x; var y1 = points[i].y;
+            string += `L${points[i].x},${points[i].y}`
+        }
+        node.attr('d', string)
     }
 
     getLine(selection) {
@@ -688,13 +774,12 @@ class PerturbSVG extends Perturbation{
         for (var i = 0; i < this.shapes.lines.length; i++) {d3.select(this.shapes.lines[i].node).selectAll('*').remove()}
         for (var i = 0; i < this.shapes.rectangles.length; i++) {d3.select(this.shapes.rectangles[i].node).selectAll('*').remove()}
         for (var i = 0; i < this.shapes.polys.length; i++) {d3.select(this.shapes.polys[i].node).selectAll('*').remove()}
+        for (var i = 0; i < this.shapes.paths.length; i++) {d3.select(this.shapes.paths[i].node).selectAll('*').remove()}
 
         var arng = params.seed != null ? new alea(SeededRandom.getSeed(params.length)) : new alea(params.seed) 
         for (var i = 0; i < this.shapes.lines.length; i++){
-            // var newG = document.createElement('g')
-            // this.shapes.lines[i].parent.node().insertBefore(newG, this.shapes.lines[i].self)
             var shape = this.shapes.lines[i]
-            var line = Shape.Line(d3.select(shape.node),//this.g.select('svg'), 
+            var line = Shape.Line(d3.select(shape.node),
                                 shape.line.a,
                                 shape.line.b,
                                 params.j,
@@ -707,13 +792,10 @@ class PerturbSVG extends Perturbation{
                                 params.wType,
                                 params.params,
                                 params.acen)
-            // line.paths.forEach(function(v, i){v.style('stroke', shape.stro != null ? shape.stro : 'none')})
         }
         
         for (var i = 0; i < this.shapes.rectangles.length; i++){
-            // var newG = document.createElement('g')
             var shape = this.shapes.rectangles[i]
-            // shape.parent.node().insertBefore(newG, shape.self)
             var rect = Shape.Rect(d3.select(shape.node), 
                                 shape.rectangle.center,
                                 shape.rectangle.rectSize,
@@ -734,9 +816,33 @@ class PerturbSVG extends Perturbation{
         }
         
         for (var i = 0; i < this.shapes.polys.length; i++){
-            // var newG = document.createElement('g')
             var shape = this.shapes.polys[i]
-            // shape.parent.node().insertBefore(newG, shape.self)
+            var paths = []
+            for (var j = 0; j < shape.lines.length; j++){
+                var line = Shape.Line(d3.select(shape.node), 
+                                    shape.lines[j].a,
+                                    shape.lines[j].b,
+                                    params.j,
+                                    params.p,
+                                    params.o,
+                                    SeededRandom.createSeed(SeededRandom.getSeededSeed(arng, params.length), params.o, params.length),
+                                    params.distType,
+                                    params.intOrder,
+                                    params.intType,
+                                    params.wType,
+                                    params.params,
+                                    params.acen)
+                Array.prototype.push.apply(paths, line.paths);
+            }
+            if (paths.length > 0)
+                this.getTrailPath(d3.select(shape.node), "rect" + i, paths, params.intType != 'line')
+                    .style('fill', shape.fill != null ? shape.fill : 'none')
+                    .style('fill-opacity', shape.fillo != null ? shape.fillo : 'none')
+                    .style('stroke', shape.stro != null ? shape.stro : 'none')
+        }
+        
+        for (var i = 0; i < this.shapes.paths.length; i++){
+            var shape = this.shapes.paths[i]
             var paths = []
             for (var j = 0; j < shape.lines.length; j++){
                 var line = Shape.Line(d3.select(shape.node), 
@@ -766,13 +872,21 @@ class PerturbSVG extends Perturbation{
 class PerturbGEDCOM extends Perturbation{
     constructor(svg, input){
         super(svg);
-        // this.g.node().append(input);
+        // this.g.remove()
+        this.svg = svg
+        this.perturbed = []
         this.size = {width: parseInt(svg.attr('width')), height: parseInt(svg.attr('height'))}
-        var ged = parse.d3ize(parse.parse(royalGED))
-        this.pg = this.buildLargestPedigreeGraph(ged)
+        this.ged = parse.d3ize(parse.parse(royalGED))
+        this.pg = this.buildLargestPedigreeGraph(this.ged)
     }
     
     buildLargestPedigreeGraph(graph){
+        var famstart = 0
+        for (var i = 0; i < graph.nodes.length; i++){
+            if (graph.nodes[i].tag == "FAM") {
+                famstart = i
+                break;}
+        }
         var graphNodes = graph.nodes.slice();
         var mapToP = graphNodes.splice(3010).reduce(function(map, arr) {
             var mapToR = arr.tree.reduce(function(map2, arr2) {
@@ -798,14 +912,12 @@ class PerturbGEDCOM extends Perturbation{
         var PSMap = {}
         var largest = 0
         var largestId = -1
-        for (var i = 0; i < graph.nodes.length; i++){
+        for (var i = 0; i < famstart; i++){
             if (map[i] == null) continue;
-            if (graph.nodes[i].tag == "FAM") break;
             PSMap = this.getPedigreeSizemap(map, i, PSMap)
         }
-        for (var i = 0; i < graph.nodes.length; i++){
+        for (var i = 0; i < famstart; i++){
             if (map[i] == null) continue;
-            if (graph.nodes[i].tag == "FAM") break;
             if (PSMap[i]>largest){
                 largest = PSMap[i];
                 largestId = i;
@@ -825,131 +937,244 @@ class PerturbGEDCOM extends Perturbation{
 
     Perturb(params){
         this.g.selectAll('*').remove()
+        // this.g = this.svg.append('g').attr('type', params.params.type);
+        // this.perturbed.push(this.g);
         var uglySeed = params.seed
         if (uglySeed == null) uglySeed = SeededRandom.getSeed(10)
         
         // procedural values
-        if (!params.useRandom) {
+        if (!params.interpolate) {
             //treemap or icicle
-            if (params.isTreemap) return this.drawRoyalTreemap({center:{x:0,y:0},rect:{width:this.size.width,height:this.size.height}}, params.rectStyle, params.joints, params.maxPert, params.params, uglySeed, true);
-            else return this.drawRoyalIcicle({center:{x:this.size.width*0.5,y:this.size.height*0.15},rect:{width:this.size.width,height:this.size.height*0.3}}, params.joints, params.maxPert, params.params, uglySeed, true)
+            if (params.isTreemap) return this.drawRoyalTreemap({center:{x:0,y:0},rect:{width:this.size.width,height:this.size.height}}, params.rectStyle, params.params, uglySeed, true);
+            else return this.drawRoyalIcicle({center:{x:this.size.width*0.5,y:this.size.height*0.15},rect:{width:this.size.width,height:this.size.height*0.3}}, params.params, uglySeed, true)
         } else{
             //treemap or icicle
-            if (params.isTreemap) return this.interpolatedRoyal({center:{x:0,y:0},rect:{width:this.size.width,height:this.size.height}}, params.rectStyle, uglySeed, true);
+            if (params.isTreemap) return this.interpolatedRoyal({center:{x:0,y:0},rect:{width:this.size.width,height:this.size.height}}, params.rectStyle, uglySeed, params.useRandom, params.ignore == null ? [] : params.ignore, true);
             else return this.icicleRoyal({center:{x:this.size.width*0.5,y:this.size.height*0.15},rect:{width:this.size.width,height:this.size.height*0.3}}, params.rectStyle, uglySeed, true);
         }
     }
-    interpolatedRoyal(rect, isRect, seed, bi = false){
+    interpolatedRoyal(rect, isRect, seed, useRandom, ignore, bi = false){
         var seed = (seed == null ? SeededRandom.getSeed(10) : seed)
-        // console.log(seed)
         var arng = new alea(seed)
-        var rndelement = Math.floor(arng()*(2**this.pg.depth))
-        var pixels = {width: this.size.width/15, height: this.size.height/15}
+        var pixels = {width: this.size.width/16, height: this.size.height/16}
         var object = this
-        var params = Array.apply(null, Array(11)).map(function(){return object.genNoiseMap(arng, {width: Math.round(object.size.width/pixels.width), height: Math.round(object.size.height/pixels.height)}, 0.1)}) // step = 0.1
-        var leafCounter = 0
-        var focused = null
+        var params = Array.apply(null, Array(11)).map(function(){return useRandom ? object.genRandomMap(arng, {width: Math.round(object.size.width/pixels.width), height: Math.round(object.size.height/pixels.height)}) : object.genNoiseMap(arng, {width: Math.round(object.size.width/pixels.width), height: Math.round(object.size.height/pixels.height)}, 0.1)}) // step = 0.1
+        var newRect = {center: {x:rect.rect.width/2, y:rect.rect.height/2}, rect: {width: rect.rect.width*0.94, height: rect.rect.height*0.94 }}
+        rect = {center: {x:rect.rect.width*0.03, y:rect.rect.height*0.03}, rect: newRect.rect}
+        var returnStuff = {seed: seed, targetList: [], targets: null}
         if (!isRect){
-            var lineDataDict = this.getLineDict(this.pg.root, rect, 0, bi)
-            // svg.append('line').attr('x1',0).attr('y1',0).attr('x2',svg.attr('width')).attr('y2',0).attr('stroke', 'black').attr('stroke-width', 2)
-            // svg.append('line').attr('x1',svg.attr('width')).attr('y1',0).attr('x2',svg.attr('width')).attr('y2',svg.attr('height')).attr('stroke', 'black').attr('stroke-width', 2)
-            // svg.append('line').attr('x1',svg.attr('width')).attr('y1',svg.attr('height')).attr('x2',0).attr('y2',svg.attr('height')).attr('stroke', 'black').attr('stroke-width', 2)
-            // svg.append('line').attr('x1',0).attr('y1',svg.attr('height')).attr('x2',0).attr('y2',0).attr('stroke', 'black').attr('stroke-width', 2)
-            var other = this.g.append('g')
+            var lineDataDict = this.getLineDict(this.pg.root, rect, 0, {x:0,y:0}, bi)
+            if (ignore.includes(7)){
+                lineDataDict.result.push({a:{x:newRect.center.x-newRect.rect.width/2,
+                                            y:newRect.center.y-newRect.rect.height/2},
+                                        b:{x:newRect.center.x+newRect.rect.width/2,
+                                            y:newRect.center.y-newRect.rect.height/2}})
+                lineDataDict.result.push({a:{x:newRect.center.x+newRect.rect.width/2,
+                                            y:newRect.center.y-newRect.rect.height/2},
+                                            b:{x:newRect.center.x+newRect.rect.width/2,
+                                            y:newRect.center.y+newRect.rect.height/2}})
+                lineDataDict.result.push({a:{x:newRect.center.x+newRect.rect.width/2,
+                                            y:newRect.center.y+newRect.rect.height/2},
+                                            b:{x:newRect.center.x-newRect.rect.width/2,
+                                            y:newRect.center.y+newRect.rect.height/2}})
+                lineDataDict.result.push({a:{x:newRect.center.x-newRect.rect.width/2,
+                                            y:newRect.center.y+newRect.rect.height/2},
+                                            b:{x:newRect.center.x-newRect.rect.width/2,
+                                            y:newRect.center.y-newRect.rect.height/2}})
+                lineDataDict.layer.push(1)
+                lineDataDict.layer.push(1)
+                lineDataDict.layer.push(1)
+                lineDataDict.layer.push(1)
+                lineDataDict.area.push(newRect)
+                lineDataDict.area.push(newRect)
+                lineDataDict.area.push(newRect)
+                lineDataDict.area.push(newRect)
+                lineDataDict.pos.push({x:0,y:0})
+                lineDataDict.pos.push({x:0,y:0})
+                lineDataDict.pos.push({x:0,y:0})
+                lineDataDict.pos.push({x:0,y:0})
+            }
+            
+            var targets = this.g.append('g')
+            var targetList = []
             for(var i = 0; i < lineDataDict.result.length; i++){
                 if (lineDataDict.layer[i] > this.pg.depth) continue;
                 if (lineDataDict.layer[i] == this.pg.depth){
-                    if (rndelement == leafCounter) {
-                        focused = {id: lineDataDict.id[i], path: this.makePath(this.g, lineDataDict.area[i]), circle: this.makeCircle(this.g, lineDataDict.area[i]), seed: seed, others: null}
-                    } else {
-                        var path = this.makePath(other, lineDataDict.area[i])
-                        path.attr('id', lineDataDict.id[i])
-                    }
-                    leafCounter++
+                    var path = this.makePath(targets, lineDataDict.area[i])
+                    path.attr('id', lineDataDict.id[i])
+                    var c = lineDataDict.area[i].center
+                    var r = lineDataDict.area[i].rect
+                    var pos = {x: 1+Math.floor((c.x - r.width*0.5)/pixels.width), y:  1+Math.floor((c.y - r.height*0.5)/pixels.height)}
+                    path.attr('posx', pos.x)
+                    path.attr('posy', pos.y)
+                    targetList.push(path)
                 }
+            }
+            for(var i = 0; i < lineDataDict.result.length; i++){
+                if (lineDataDict.layer[i] > this.pg.depth) continue;
                 if(lineDataDict.result[i] == null) continue;
-                var pos = {x: Math.floor((lineDataDict.area[i].center.x - lineDataDict.area[i].rect.width*0.5)/pixels.width), y:  Math.floor((lineDataDict.area[i].center.y - lineDataDict.area[i].rect.height*0.5)/pixels.width)}
-                var a = lineDataDict.result[i].a
-                var b = lineDataDict.result[i].b
-                var abLength = Math.sqrt((b.x-a.x)**2+(b.y-a.y)**2)
-                var line = Shape.LineValue(
+                var c = lineDataDict.area[i].center
+                var r = lineDataDict.area[i].rect
+                var pos = {x: 1+Math.floor((c.x - r.width*0.5)/pixels.width), y:  1+Math.floor((c.y - r.height*0.5)/pixels.height)}
+                
+                var sects = 2**Math.floor((this.pg.depth-lineDataDict.layer[i]+1)/2)
+                var runthroughs = ignore.includes(7) ? sects: 1
+                
+                for (var j = 0; j < runthroughs; j++){
+                    var a = lineDataDict.result[i].a
+                    var b = lineDataDict.result[i].b
+                    if (ignore.includes(7)){
+                        a = {x: a.x+(b.x-a.x)/sects*j,
+                            y: a.y+(b.y-a.y)/sects*j}
+                        b = {x: a.x+(b.x-a.x)/sects*(j+1),
+                            y: a.y+(b.y-a.y)/sects*(j+1)}
+                        pos = {x:Math.floor((a.x+(b.x-a.x)/2)/pixels.width),y:Math.floor((a.y+(b.y-a.y)/2)/pixels.height)}
+                    }
+                    var line = Shape.LineValue(
+                        this.g,
+                        a,
+                        b,
+                        !ignore.includes(0) ? Math.floor(params[0][pos.x][pos.y]*17+1) : 17*0.5+1,
+                        !ignore.includes(1) ? 10*params[1][pos.x][pos.y]*0.4+1 : 3,
+                        0,
+                        SeededRandom.createSeed(SeededRandom.getSeededSeed(arng, params.length), 0, params.length),
+                        !ignore.includes(2) ? params[3][pos.x][pos.y] : 0.5,
+                        !ignore.includes(3) ? params[4][pos.x][pos.y] : 0.1,
+                        !ignore.includes(4) ? params[5][pos.x][pos.y] : 0.5,
+                        1,
+                        {
+                            dist:{
+                                mu: params.mu,
+                                sigma: params.sigma,
+                            },
+                            width:{
+                                cap: 'round',
+                                j: !ignore.includes(5) ? 2 : 0,
+                                precision: 4,
+                                min: !ignore.includes(5) ? 0.2 : 1,
+                                max: !ignore.includes(5) ? params[6][pos.x][pos.y]*4+3 : 3,
+                                minRange: params[9][pos.x][pos.y]*3+2,
+                                maxRange: params[10][pos.x][pos.y]*5+params[9][pos.x][pos.y]*3+2,
+                            },
+                            gaps: 0,
+                        },
+                        0,
+                    );
+                }
+            }
+            if (!ignore.includes(7)){
+                var rect = Shape.Rect(
                     this.g,
-                    a,
-                    b,
-                    Math.floor(params[0][pos.x][pos.y]*17+2),//Math.floor(params[0][pos.x][pos.y]*17+1),//16 * abLength / 100,
-                    20*params[1][pos.x][pos.y]*0.33+2,//20*params[1][pos.x][pos.y]*0.33+2,//1*lineDataDict.layer[i],
-                    0,//Math.floor(params[2][pos.x][pos.y]*5), //0
-                    SeededRandom.createSeed(SeededRandom.getSeededSeed(arng, params.length), 0, params.length),//{dist: null, path: null, width: null},
-                    params[3][pos.x][pos.y],//'random',
-                    params[4][pos.x][pos.y],//'sort',
-                    params[5][pos.x][pos.y],//'curve',
-                    0.9,//params[6][pos.x][pos.y],//*4+1,//'constant',
+                    newRect.center, 
+                    newRect.rect,
+                    SeededRandom.getSeededSeed(arng, params.length),
+                    params.length,
+                    false,
+                    !ignore.includes(0) ? Math.floor(params[0][pos.x][pos.y]*17)+1 : 0.2*17+2,
+                    !ignore.includes(1) ? 10*params[1][pos.x][pos.y]*0.4+1 : 5*0.33+2,
+                    0,
+                    !ignore.includes(2) ? params[3][pos.x][pos.y] : 0.5,
+                    !ignore.includes(3) ? params[4][pos.x][pos.y] : 0.1,
+                    !ignore.includes(4) ? params[5][pos.x][pos.y] : 0.5,
+                    1,
                     {
                         dist:{
-                            mu: params.mu,//0,
-                            sigma: params.sigma,//1
+                            mu: params.mu,
+                            sigma: params.sigma,
                         },
                         width:{
-                            min: params[7][pos.x][pos.y]*3+2,// params.min,//5,
-                            max: params[8][pos.x][pos.y]*3+params[7][pos.x][pos.y]*3+2,// params.max,//10,
-                            minRange: params[9][pos.x][pos.y]*3+2,// params.minRange,//16,
-                            maxRange: params[10][pos.x][pos.y]*5+params[9][pos.x][pos.y]*3+2,// params.maxRange,//32
-                        }
+                            cap: 'round',
+                            j: !ignore.includes(5) ? 2 : 0,
+                            precision: 2,
+                            min: !ignore.includes(5) ? 0.2 : 1,
+                            max: !ignore.includes(5) ? params[6][pos.x][pos.y]*4+1 : 1,
+                            minRange: 16,
+                            maxRange: 32,
+                        },
+                        gaps:0,
                     },
                     0,
                 );
-                // line.g.selectAll('path').attr('stroke-width', 10-(Math.sqrt(Math.sqrt(lineDataDict.layer[i]*15+1))-1)*4)
             }
-            focused['others'] = other.selectAll('path')
-            return focused
+            returnStuff['targets'] = targets.selectAll('path')
+            returnStuff['targetList'] = targetList.sort(function(a,b){
+                var ax = parseInt(a.attr("posx"))
+                var ay = parseInt(a.attr("posy"))
+                var bx = parseInt(b.attr("posx"))
+                var by = parseInt(b.attr("posy"))
+                if (ax+16*ay>bx+16*by) return 1
+                if (ax+16*ay<bx+16*by) return -1
+                return 0
+            })
+            return returnStuff
         }
-        else{
-            var other = this.g.append('g')
-            var rectDataDict = this.getRectDict(this.pg.root, rect, 0, bi)
+        else{  
+            var targets = this.g.append('g')
+            var targetList = []
+            var rectDataDict = this.getRectDict(this.pg.root, rect, 0, {x:0,y:0}, bi)
             for(var i = 0; i < rectDataDict.result.length; i++){
                 if (rectDataDict.layer[i] > this.pg.depth) continue;
                 if (rectDataDict.layer[i] == this.pg.depth){
-                    if (rndelement == leafCounter) {
-                        focused = {id: rectDataDict.id[i], path: this.makePath(this.g, rectDataDict.result[i]), circle: this.makeCircle(this.g, rectDataDict.result[i]), seed: seed, others: null}
-                    } else {
-                        var path = this.makePath(other, rectDataDict.result[i])
-                        path.attr('id', rectDataDict.id[i])
-                    }
-                    leafCounter++
+                    var path = this.makePath(targets, rectDataDict.result[i])
+                    path.attr('id', rectDataDict.id[i])
+                    var c = rectDataDict.result[i].center
+                    var r = rectDataDict.result[i].rect
+                    var pos = {x: 1+Math.floor((c.x - r.width*0.5)/pixels.width), y:  1+Math.floor((c.y - r.height*0.5)/pixels.height)}
+                    path.attr('posx', pos.x)
+                    path.attr('posy', pos.y)
+                    targetList.push(path)
                 }
-                var pos = {x: Math.floor((rectDataDict.result[i].center.x - rectDataDict.result[i].rect.width*0.5)/pixels.width), y:  Math.floor((rectDataDict.result[i].center.y - rectDataDict.result[i].rect.height*0.5)/pixels.width)}
+            }
+
+            for(var i = 0; i < rectDataDict.result.length; i++){
+                if (rectDataDict.layer[i] > this.pg.depth) continue;
+                var c = rectDataDict.result[i].center
+                var r = rectDataDict.result[i].rect
+                var pos = {x: 1+Math.floor((c.x - r.width*0.5)/pixels.width), y:  1+Math.floor((c.y - r.height*0.5)/pixels.height)}
                 var rect = Shape.Rect(
                     this.g,
-                    rectDataDict.result[i].center, 
-                    rectDataDict.result[i].rect,
-                    SeededRandom.getSeededSeed(arng, params.length),//{dist: null, path: null, width: null},
+                    c, 
+                    r,
+                    SeededRandom.getSeededSeed(arng, params.length),
                     params.length,
-                    // rectSize: {width: rectDataDict.result[i].rect.width * 0.95, height: rectDataDict.result[i].rect.height * 0.95},
-                    Math.floor(params[0][pos.x][pos.y]*17+2),//16 * abLength / 100,
-                    20*params[1][pos.x][pos.y]*0.33+2,//1*lineDataDict.layer[i],
-                    0,//Math.floor(params[2][pos.x][pos.y]*5), //0
-                    params[3][pos.x][pos.y],//'random',
-                    params[4][pos.x][pos.y],//'sort',
-                    params[5][pos.x][pos.y],//'curve',
-                    0.9,//params[6][pos.x][pos.y],//*4+1,//'constant',
+                    false,
+                    !ignore.includes(0) ? Math.floor(params[0][pos.x][pos.y]*17)+1 : 0.2*17+2,
+                    !ignore.includes(1) ? 10*params[1][pos.x][pos.y]*0.4+1 : 5*0.33+2,
+                    0,
+                    !ignore.includes(2) ? params[3][pos.x][pos.y] : 0.5,
+                    !ignore.includes(3) ? params[4][pos.x][pos.y] : 0.1,
+                    !ignore.includes(4) ? params[5][pos.x][pos.y] : 0.5,
+                    1,
                     {
                         dist:{
-                            mu: params.mu,//0,
-                            sigma: params.sigma,//1
+                            mu: params.mu,
+                            sigma: params.sigma,
                         },
                         width:{
-                            min: params[7][pos.x][pos.y]*3+2,// params.min,//5,
-                            max: params[8][pos.x][pos.y]*3+params[7][pos.x][pos.y]*3+2,// params.max,//10,
-                            minRange: params[9][pos.x][pos.y]*3+2,// params.minRange,//16,
-                            maxRange: params[10][pos.x][pos.y]*5+params[9][pos.x][pos.y]*3+2,// params.maxRange,//32
-                        }
+                            cap: 'round',
+                            j: !ignore.includes(5) ? 2 : 0,
+                            precision: 2,
+                            min: !ignore.includes(5) ? 0.2 : 1,
+                            max: !ignore.includes(5) ? params[6][pos.x][pos.y]*4+1 : 1,
+                            minRange: 16,
+                            maxRange: 32,
+                        },
+                        gaps:0,
                     },
                     0,
                 );
-                // rect.g.selectAll('path').attr('stroke-width', 10-(Math.sqrt(Math.sqrt(rectDataDict.layer[i]*15+1))-1)*4)
             }
-            focused['others'] = other.selectAll('path')
-            return focused
+            returnStuff['targets'] = targets.selectAll('path')
+            returnStuff['targetList'] = targetList.sort( function (a,b){
+                var ax = parseInt(a.attr("posx"))
+                var ay = parseInt(a.attr("posy"))
+                var bx = parseInt(b.attr("posx"))
+                var by = parseInt(b.attr("posy"))
+                if (ax+16*ay>bx+16*by) return 1
+                if (ax+16*ay<bx+16*by) return -1
+                return 0
+            })
+            return returnStuff
         }
     }
 
@@ -967,154 +1192,163 @@ class PerturbGEDCOM extends Perturbation{
         var rectDataDict = this.getIcicleDict(this.pg.root, rect, 0, bi)
         for(var i = 0; i < rectDataDict.result.length; i++){
             if (rectDataDict.layer[i] > this.pg.depth) continue;
-            // if (rectDataDict.layer[i] == depth){
-            //     if (rndelement == leafCounter) {
-            //         focused = {id: rectDataDict.id[i], path: makePath(svg, rectDataDict.result[i]), circle: makeCircle(svg, rectDataDict.result[i]), seed: seed, others: null}
-            //     } else {
-            //         var path = makePath(other, rectDataDict.result[i])
-            //         path.attr('id', rectDataDict.id[i])
-            //     }
-            //     leafCounter++
-            // }
             var pos = {x: Math.floor((rectDataDict.result[i].center.x - rectDataDict.result[i].rect.width*0.5)/pixels.width), y:  Math.floor((rectDataDict.result[i].center.y - rectDataDict.result[i].rect.height*0.5)/pixels.width)}
             var rect = Shape.Rect(
                 this.g,
                 rectDataDict.result[i].center, 
                 rectDataDict.result[i].rect,
-                SeededRandom.getSeededSeed(arng, params.length),//{dist: null, path: null, width: null},
+                SeededRandom.getSeededSeed(arng, params.length),
                 params.length,
-                Math.floor(params[0][pos.x][pos.y]*17+2),//16 * abLength / 100,
-                20*params[1][pos.x][pos.y]*0.33+2,//1*lineDataDict.layer[i],
-                0,//Math.floor(params[2][pos.x][pos.y]*5), //0
-                params[3][pos.x][pos.y],//'random',
-                params[4][pos.x][pos.y],//'sort',
-                params[5][pos.x][pos.y],//'curve',
-                0.9,//params[6][pos.x][pos.y]*4,//'constant',
+                false,
+                Math.floor(params[0][pos.x][pos.y]*17+2),
+                20*params[1][pos.x][pos.y]*0.33+2,
+                0,
+                params[3][pos.x][pos.y],
+                params[4][pos.x][pos.y],
+                params[5][pos.x][pos.y],
+                0.9,
                 {
                     dist:{
-                        mu: params.mu,//0,
-                        sigma: params.sigma,//1
+                        mu: params.mu,
+                        sigma: params.sigma,
                     },
                     width:{
-                        min: params[6][pos.x][pos.y]*3+2,// params.min,//5,
-                        max: params[7][pos.x][pos.y]*3+params[6][pos.x][pos.y]*3+2,// params.max,//10,
-                        minRange: params[8][pos.x][pos.y]*3+2,// params.minRange,//16,
-                        maxRange: params[9][pos.x][pos.y]*5+params[8][pos.x][pos.y]*3+2,// params.maxRange,//32
+                        min: params[6][pos.x][pos.y]*3+2,
+                        max: params[7][pos.x][pos.y]*3+params[6][pos.x][pos.y]*3+2,
+                        minRange: params[8][pos.x][pos.y]*3+2,
+                        maxRange: params[9][pos.x][pos.y]*5+params[8][pos.x][pos.y]*3+2,
                     }
                 },
                 0,
             );
-            // rect.g.selectAll('path').attr('stroke-width', 10-(Math.sqrt(Math.sqrt(rectDataDict.layer[i]*15+1))-1)*4)
         }
-        // focused['others'] = other.selectAll('path')
         return focused
     }
 
-    drawRoyalTreemap(rect, isRect, joints, maxPert, params, seed, bi = false){
+    drawRoyalTreemap(rect, isRect, params, seed, bi = false){
         var seed = (seed == null ? SeededRandom.getSeed(10) : seed)
         var arng = new alea(seed)
-        var rndelement = Math.floor(arng()*(2**this.pg.depth))
-        var leafCounter = 0
-        var focused = null
+        var pixels = {width: this.size.width/15, height: this.size.height/15}
+        rect = {center: {x:-rect.rect.width*0.03, y:-rect.rect.height*0.03}, rect: {width: rect.rect.width*1.06, height: rect.rect.height*1.06 }}
+        var returnStuff = {seed: seed, targetList: [], targets: null}
         if (!isRect){
-            var lineDataDict = this.getLineDict(this.pg.root, rect, 0, bi)
-            // svg.append('line').attr('x1',0).attr('y1',0).attr('x2',svg.attr('width')).attr('y2',0).attr('stroke', 'black').attr('stroke-width', 2)
-            // svg.append('line').attr('x1',svg.attr('width')).attr('y1',0).attr('x2',svg.attr('width')).attr('y2',svg.attr('height')).attr('stroke', 'black').attr('stroke-width', 2)
-            // svg.append('line').attr('x1',svg.attr('width')).attr('y1',svg.attr('height')).attr('x2',0).attr('y2',svg.attr('height')).attr('stroke', 'black').attr('stroke-width', 2)
-            // svg.append('line').attr('x1',0).attr('y1',svg.attr('height')).attr('x2',0).attr('y2',0).attr('stroke', 'black').attr('stroke-width', 2)
-            var other = this.g.append('g')
+            var lineDataDict = this.getLineDict(this.pg.root, rect, 0, {x:0,y:0}, bi)
+            var targets = this.g.append('g')
+            var targetList = []
             for(var i = 0; i < lineDataDict.result.length; i++){
                 if (lineDataDict.layer[i] > this.pg.depth) continue;
                 if (lineDataDict.layer[i] == this.pg.depth){
-                    if (rndelement == leafCounter) {
-                        focused = {id: lineDataDict.id[i], path: this.makePath(this.g, lineDataDict.area[i]), circle: this.makeCircle(this.g, lineDataDict.area[i]), seed: seed, others: null}
-                    } else {
-                        var path = this.makePath(other, lineDataDict.area[i])
-                        path.attr('id', lineDataDict.id[i])
-                    }
-                    leafCounter++
+                    var path = this.makePath(targets, lineDataDict.area[i])
+                    path.attr('id', lineDataDict.id[i])
+                    
+                    var c = lineDataDict.area[i].center
+                    var r = lineDataDict.area[i].rect
+                    var pos = {x: 1+Math.floor((c.x - r.width*0.5)/pixels.width), y:  1+Math.floor((c.y - r.height*0.5)/pixels.height)}
+                    
+                    path.attr('posx', pos.x)
+                    path.attr('posy', pos.y)
+                    targetList.push(path)
                 }
                 if(lineDataDict.result[i] == null) continue;
                 var a = lineDataDict.result[i].a
                 var b = lineDataDict.result[i].b
-                var abLength = Math.sqrt((b.x-a.x)**2+(b.y-a.y)**2)
                 var line = Shape.Line(
                     this.g,
                     a,
                     b,
-                    parseInt(joints),//16 * abLength / 100,
-                    20*maxPert,//1*lineDataDict.layer[i],
-                    params.o, //0
-                    // length: params.length,
+                    parseInt(joints),
+                    20*maxPert,
+                    params.o, 
                     SeededRandom.createSeed(SeededRandom.getSeededSeed(arng, params.length), params.o, params.length),//{dist: null, path: null, width: null},
-                    params.dT,//'random',
-                    params.iO,//'sort',
-                    params.iT,//'curve',
-                    params.wT,//'constant',
+                    params.dT,
+                    params.iO,
+                    params.iT,
+                    params.wT,
                     {
                         dist:{
-                            mu: params.mu,//0,
-                            sigma: params.sigma,//1
+                            mu: params.mu,
+                            sigma: params.sigma,
                         },
                         width:{
-                            min: params.min,//5,
-                            max: params.max,//10,
-                            minRange: params.minRange,//16,
-                            maxRange: params.maxRange,//32
+                            min: params.min,
+                            max: params.max,
+                            minRange: params.minRange,
+                            maxRange: params.maxRange,
                         },
                         acen: 0,
                     }
                 );
-                // line.g.selectAll('path').attr('stroke-width', 10-(Math.sqrt(Math.sqrt(lineDataDict.layer[i]*15+1))-1)*4)
             }
-            focused['others'] = other.selectAll('path')
-            return focused
+            returnStuff['targets'] = targets.selectAll('path')
+            returnStuff['targetList'] = targetList.sort( function (a,b){
+                var ax = parseInt(a.attr("posx"))
+                var ay = parseInt(a.attr("posy"))
+                var bx = parseInt(b.attr("posx"))
+                var by = parseInt(b.attr("posy"))
+                if (ax+16*ay>bx+16*by) return 1
+                if (ax+16*ay<bx+16*by) return -1
+                return 0
+            })
+            return returnStuff
         }
         else{
-            var other = this.g.append('g')
-            var rectDataDict = this.getRectDict(this.pg.root, rect, 0, bi)
+            var targets = this.g.append('g')
+            var targetList = []
+            var rectDataDict = this.getRectDict(this.pg.root, rect, 0, {x:0,y:0}, bi)
             for(var i = 0; i < rectDataDict.result.length; i++){
                 if (rectDataDict.layer[i] > this.pg.depth) continue;
                 if (rectDataDict.layer[i] == this.pg.depth){
-                    if (rndelement == leafCounter) {
-                        focused = {id: rectDataDict.id[i], path: this.makePath(this.g, rectDataDict.result[i]), circle: this.makeCircle(this.g, rectDataDict.result[i]), seed: seed, others: null}
-                    } else {
-                        var path = this.makePath(other, rectDataDict.result[i])
-                        path.attr('id', rectDataDict.id[i])
-                    }
-                    leafCounter++
+                    var path = this.makePath(targets, rectDataDict.result[i])
+                    path.attr('id', rectDataDict.id[i])
+                    
+                    var c = rectDataDict.result[i].center
+                    var r = rectDataDict.result[i].rect
+                    var pos = {x: 1+Math.floor((c.x - r.width*0.5)/pixels.width), y:  1+Math.floor((c.y - r.height*0.5)/pixels.height)}
+                    
+                    path.attr('posx', pos.x)
+                    path.attr('posy', pos.y)
+                    targetList.push(path)
                 }
                 var rect = Shape.Rect(
                     this.g,
                     rectDataDict.result[i].center, 
                     rectDataDict.result[i].rect,
-                    SeededRandom.getSeededSeed(arng, params.length),//{dist: null, path: null, width: null},
+                    SeededRandom.getSeededSeed(arng, params.length),
                     params.length,
-                    parseInt(joints),//16
-                    20*maxPert,//1*lineDataDict.layer[i],
-                    params.o, //0
-                    params.dT,//'random',
-                    params.iO,//'sort',
-                    params.iT,//'curve',
-                    params.wT,//'constant',
+                    false,
+                    parseInt(joints),
+                    20*maxPert,
+                    params.o,
+                    params.dT,
+                    params.iO,
+                    params.iT,
+                    params.wT,
                     {
                         dist:{
-                            mu: params.mu,//0,
-                            sigma: params.sigma,//1
+                            mu: params.mu,
+                            sigma: params.sigma,
                         },
                         width:{
-                            min: params.min,//5,
-                            max: params.max,//10,
-                            minRange: params.minRange,//16,
-                            maxRange: params.maxRange,//32
+                            min: params.min,
+                            max: params.max,
+                            minRange: params.minRange,
+                            maxRange: params.maxRange,
                         }
                     },
                     0,
                 );
-                // rect.g.selectAll('path').attr('stroke-width', 10-(Math.sqrt(Math.sqrt(rectDataDict.layer[i]*15+1))-1)*4)
             }
-            focused['others'] = other.selectAll('path')
-            return focused
+            returnStuff['targets'] = targets.selectAll('path')
+            returnStuff['targetList'] = targetList.sort( function (a,b){
+                var ax = parseInt(a.attr("posx"))
+                var ay = parseInt(a.attr("posy"))
+                var bx = parseInt(b.attr("posx"))
+                var by = parseInt(b.attr("posy"))
+                if (ax+16*ay>bx+16*by) return 1
+                if (ax+16*ay<bx+16*by) return -1
+                return 0
+            })
+            return returnStuff
         }
     }
 
@@ -1141,30 +1375,30 @@ class PerturbGEDCOM extends Perturbation{
                 this.g,
                 rectDataDict.result[i].center, 
                 rectDataDict.result[i].rect,
-                SeededRandom.getSeededSeed(arng, params.length),//{dist: null, path: null, width: null},
+                SeededRandom.getSeededSeed(arng, params.length),
                 params.length,
-                parseInt(joints),//16
-                20*maxPert,//1*lineDataDict.layer[i],
-                params.o, //0
-                params.dT,//'random',
-                params.iO,//'sort',
-                params.iT,//'curve',
-                params.wT,//'constant',
+                false,
+                parseInt(joints),
+                20*maxPert,
+                params.o, 
+                params.dT,
+                params.iO,
+                params.iT,
+                params.wT,
                 {
                     dist:{
-                        mu: params.mu,//0,
-                        sigma: params.sigma,//1
+                        mu: params.mu,
+                        sigma: params.sigma,
                     },
                     width:{
-                        min: params.min,//5,
-                        max: params.max,//10,
-                        minRange: params.minRange,//16,
-                        maxRange: params.maxRange,//32
+                        min: params.min,
+                        max: params.max,
+                        minRange: params.minRange,
+                        maxRange: params.maxRange,
                     }
                 },
                 -0.5
             );
-            // rect.g.selectAll('path').attr('stroke-width', 10-(Math.sqrt(Math.sqrt(rectDataDict.layer[i]*15+1))-1)*4)
         }
         focused['others'] = other.selectAll('path')
         return focused
@@ -1176,7 +1410,21 @@ class PerturbGEDCOM extends Perturbation{
         for (var x = 0; x < map.length; x++) {
           for (var y = 0; y < map[x].length; y++) {
             var value = noise.simplex2(x * step, y * step); 
+            if (value < -1 || value > 1) console.log("found one: " + value)
             map[x][y] = (value+1)*0.5;
+          }
+        }
+        return map
+    }
+
+    genRandomMap(seedFunc, size){
+        // noise.seed(floatSeed);
+        var arng = new alea(SeededRandom.getSeededSeed(seedFunc, 10));
+        var map = Array.apply(null, Array(size.width)).map(function(){return Array.apply(null, Array(size.height)).map(function(){return 0;})})
+        for (var x = 0; x < map.length; x++) {
+          for (var y = 0; y < map[x].length; y++) {
+            var value = arng()
+            map[x][y] = Math.floor(value*5)/4
           }
         }
         return map
@@ -1194,10 +1442,6 @@ class PerturbGEDCOM extends Perturbation{
         return currentPSMap
     }
     getDepthLeaves(dict, id, depth, tree = {}){
-        // if (!dict[id].length) {
-        //     tree[id] = 1
-        //     return tree
-        // }
         var amount = 0
         for (var i = 0; i < dict[id].length; i++){
             if (dict[dict[id][i]] == null || depth == 1){
@@ -1211,12 +1455,14 @@ class PerturbGEDCOM extends Perturbation{
         tree[id] = amount
         return tree
     }
-    getLineDict(currentId, rect, count, bi = false){
+
+    getLineDict(currentId, rect, count, xy, bi = false){
         var results = []
         var layers = []
         var ids = []
         var areas = []
-        if (this.pg.map[currentId] == null) return {result: [], layer: [], id: [], area: []}
+        var pos = []
+        if (this.pg.map[currentId] == null) return {result: [], layer: [], id: [], area: [], pos: []}
         var children = this.pg.map[currentId].length
         var intervalW = rect.rect.width, intervalH = rect.rect.height,
             useW = 0, useH = 0,
@@ -1241,18 +1487,20 @@ class PerturbGEDCOM extends Perturbation{
             layers.push(count+1);
             ids.push(this.pg.map[currentId][i]);
             areas.push(newRect)
+            pos.push({x: xy.x, y: xy.y})
         }
         
         offsetW = 0
         offsetH = 0
         for(var ratio, i = 0; i < children; i++){
-            // if (dict[dict[currentId][i]] == null) continue;
+            var cF = i * 2**Math.floor((this.pg.depth - count)/2)
+            if (cF < 0 ) cF = 0
             ratio = parseInt(this.pg.leaves[this.pg.map[currentId][i]]) / parseInt(this.pg.leaves[currentId])
             if (bi) ratio = 0.5
             if (useH) intervalH = rect.rect.height * ratio
             else if (useW) intervalW = rect.rect.width * ratio
     
-            var childLineDict = this.getLineDict(this.pg.map[currentId][i],{center:{x: rect.center.x+offsetW, y: rect.center.y+offsetH}, rect:{width: intervalW, height: intervalH}}, count+1, bi);
+            var childLineDict = this.getLineDict(this.pg.map[currentId][i],{center:{x: rect.center.x+offsetW, y: rect.center.y+offsetH}, rect:{width: intervalW, height: intervalH}}, count+1, {x: xy.x+(useW*cF/2), y: xy.y+(useH*cF)}, bi);
             offsetH +=intervalH*useH
             offsetW +=intervalW*useW
     
@@ -1260,15 +1508,17 @@ class PerturbGEDCOM extends Perturbation{
             Array.prototype.push.apply(layers, childLineDict.layer);
             Array.prototype.push.apply(ids, childLineDict.id);
             Array.prototype.push.apply(areas, childLineDict.area);
+            Array.prototype.push.apply(pos, childLineDict.pos);
         }
-        return {result: results, layer: layers, id: ids, area: areas}
+        return {result: results, layer: layers, id: ids, area: areas, pos: pos}
     }
     
-    getRectDict(currentId, rect, count, bi = false){
+    getRectDict(currentId, rect, count, xy, bi = false){
         var results = []
         var layers = []
         var ids = []
-        if (this.pg.map[currentId] == null) return {result: [{center:{x:rect.center.x+rect.rect.width/2,y:rect.center.y+rect.rect.height/2}, rect:rect.rect}], layer: [count], id: [currentId]}
+        var pos = []
+        if (this.pg.map[currentId] == null) return {result: [{center:{x:rect.center.x+rect.rect.width/2,y:rect.center.y+rect.rect.height/2}, rect:rect.rect}], layer: [count], id: [currentId], pos: [xy]}
         var children = this.pg.map[currentId].length
         var intervalW = rect.rect.width, intervalH = rect.rect.height,
             useW = 0, useH = 0,
@@ -1280,7 +1530,7 @@ class PerturbGEDCOM extends Perturbation{
         }
         for (var ratio, line, newRect, i = 0; i < children; i++ ){
             if (count != this.pg.depth-1) continue;
-            // if (children == 1 || dict[currentId][i].length < 2) continue;
+
             ratio = parseInt(this.pg.leaves[this.pg.map[currentId][i]]) / parseInt(this.pg.leaves[currentId])
             if (bi) ratio = 0.5
             if (useH) intervalH = rect.rect.height * ratio
@@ -1290,13 +1540,16 @@ class PerturbGEDCOM extends Perturbation{
             offsetH +=intervalH*useH
             offsetW +=intervalW*useW
             results.push(newRect);
-            layers.push(count+1); // might not be +1 not sure
+            layers.push(count+1);
             ids.push(this.pg.map[currentId][i]);
+            pos.push({x: xy.x, y: xy.y})
         }
         
         offsetW = 0
         offsetH = 0
         for(var ratio, i = 0; i < children; i++){
+            var cF = i * 2**Math.floor((this.pg.depth - count)/2)
+            if (cF < 0 ) cF = 0
             ratio = parseInt(this.pg.leaves[this.pg.map[currentId][i]]) / parseInt(this.pg.leaves[currentId])
             if (bi) ratio = 0.5
             if (useH) intervalH = rect.rect.height * ratio
@@ -1308,15 +1561,16 @@ class PerturbGEDCOM extends Perturbation{
                 continue;
             }
     
-            var childLineDict = this.getRectDict(this.pg.map[currentId][i],{center:{x: rect.center.x+offsetW, y: rect.center.y+offsetH}, rect:{width: intervalW, height: intervalH}}, count+1, bi);
+            var childLineDict = this.getRectDict(this.pg.map[currentId][i],{center:{x: rect.center.x+offsetW, y: rect.center.y+offsetH}, rect:{width: intervalW, height: intervalH}}, count+1, {x: xy.x+(useW*cF/2), y: xy.y+(useH*cF)}, bi);
             offsetH +=intervalH*useH
             offsetW +=intervalW*useW
     
             Array.prototype.push.apply(results, childLineDict.result);
             Array.prototype.push.apply(layers, childLineDict.layer);
             Array.prototype.push.apply(ids, childLineDict.id);
+            Array.prototype.push.apply(pos, childLineDict.pos);
         }
-        return {result: results, layer: layers, id: ids}
+        return {result: results, layer: layers, id: ids, pos: pos}
     }
     
     getIcicleDict(currentId, rect, count, bi = false){
@@ -1330,8 +1584,6 @@ class PerturbGEDCOM extends Perturbation{
             offsetW = 0, offsetH = 0;
             
         for (var ratio, line, newRect, i = 0; i < children; i++ ){
-            // if (count != this.pg.depth-1) continue;
-            // if (children == 1 || dict[currentId][i].length < 2) continue;
             ratio = parseInt(this.pg.leaves[this.pg.map[currentId][i]]) / parseInt(this.pg.leaves[currentId])
             if (bi) ratio = 0.5
             intervalH = rect.rect.height * 0.6
@@ -1341,7 +1593,7 @@ class PerturbGEDCOM extends Perturbation{
             offsetH +=intervalH*useH
             offsetW +=intervalW
             results.push(newRect);
-            layers.push(count+1); // might not be +1 not sure
+            layers.push(count+1);
             ids.push(this.pg.map[currentId][i]);
         }
         

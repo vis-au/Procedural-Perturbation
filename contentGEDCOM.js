@@ -304,17 +304,23 @@ window.onload = function() {
         // var target = perturbGEDCOM(svgged, pedigreeGraph, joints, maxPert, {name: '', length: 10, o: 0, iO: interOrder, dT: distType, iT: interType, wT: widthType, mu: muInput, sigma: sigmaInput, min: minInput, max: maxInput, minRange: minRangeInput, maxRange: maxRangeInput}, rectStyle, false, true)
         // buildPedigreeGraph(svgged, ged, root, joints, maxPert, rectStyle, {name: '', length: 10, o: 0, iO: interOrder, dT: distType, iT: interType, wT: widthType, mu: muInput, sigma: sigmaInput, min: minInput, max: maxInput, minRange: minRangeInput, maxRange: maxRangeInput}, useLargest, false, true);
         // var vis = new perturbGEDCOM(svgged, royalGED)
-        vis.Perturb({joints: joints,
-                    maxPert: maxPert,
+        vis.Perturb({
+                    id: -1,
                     rectStyle: rectStyle,
-                    useRandom: transStyle,
+                    interpolate: transStyle,
+                    useRandom: false,
                     isTreemap: true,
-                    o: 0,
+                    ignore: [8],
                     params: {
+                        name: "",
+                        j: joints,
+                        p: maxPert,
+                        interpolate: transStyle,
                         dT: distType,
                         iO: interOrder,
                         iT: interType,
                         wT: widthType,
+                        o: 0,
                         length: 10,
                         seed: SeededRandom.getSeed(10),
                         rectSeed: SeededRandom.getSeed(10),
@@ -332,20 +338,25 @@ window.onload = function() {
         // svgged.selectAll('*').remove();
         // console.log(ged.nodes[root].name)
         // var pedigreeGraph = buildPedigreeGraph(ged, useLargest ? -1 : root)
-        // var target = perturbGEDCOM(svgged, pedigreeGraph, joints, maxPert, {name: '', length: 10, o: 0, iO: interOrder, dT: distType, iT: interType, wT: widthType, mu: muInput, sigma: sigmaInput, min: minInput, max: maxInput, minRange: minRangeInput, maxRange: maxRangeInput}, rectStyle, false, false)
+        // var target = perturbGEDCOM(svgged, pedigreeGraph, joints, maxPert, {name: d'', length: 10, o: 0, iO: interOrder, dT: distType, iT: interType, wT: widthType, mu: muInput, sigma: sigmaInput, min: minInput, max: maxInput, minRange: minRangeInput, maxRange: maxRangeInput}, rectStyle, false, false)
         // buildPedigreeGraph(svgged, ged, root, joints, maxPert, rectStyle, {name: '', length: 10, o: 0, iO: interOrder, dT: distType, iT: interType, wT: widthType, mu: muInput, sigma: sigmaInput, min: minInput, max: maxInput, minRange: minRangeInput, maxRange: maxRangeInput}, useLargest, false, false);
         
-        vis.Perturb({joints: joints,
-                    maxPert: maxPert,
+        vis.Perturb({
                     rectStyle: rectStyle,
-                    useRandom: transStyle,
+                    interpolate: transStyle,
+                    useRandom: false,
                     isTreemap: false,
-                    o: 0,
+                    ignore: [8],
                     params: {
+                        name: "",
+                        j: joints,
+                        p: maxPert,
+                        interpolate: transStyle,
                         dT: distType,
                         iO: interOrder,
                         iT: interType,
                         wT: widthType,
+                        o: 0,
                         length: 10,
                         seed: SeededRandom.getSeed(10),
                         rectSeed: SeededRandom.getSeed(10),
